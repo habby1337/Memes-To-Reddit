@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using System;
-
+using System.Globalization;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -16,21 +17,53 @@ namespace r_memes_to_telegram
     class Program
     {
 
-
-        class post
+        class Posts
         {
-            public static string title { get; set; }
-            public static string author { get; set; }
-            public static string img_url { get; set; }
-            public static string post_url { get; set; }
-            public static string id { get; set; }
+            //private data members
+            private string title;
+            private string id;
+            private string author;
+            private string permalink;
+            private string url;
+            private string is_video;
+
+            //method to set student details
+            public void SetInfo(string title, string author, string url, string permalink, string id, string is_video)
+            {
+                this.title = title;
+                this.id = id;
+                this.author = author;
+                this.permalink = permalink;
+                this.url = url;
+                this.is_video = is_video;
+            }
+
+            //method to print student details
+            public void printInfo()
+            {
+                Console.WriteLine
+                 (
+                 "Title: " + title
+                 + "\nAuthor: " + author
+                 + "\nId: " + id
+                 + "\nUrl: " + url
+                 + "\nPermaLink: " + permalink
+                 + "\nIs Video: " + is_video
+                 + "\n---------------"
+                 );
+
+
+            }
 
         }
+
+
 
         class setting
         {
             public static int time = 60000;//600000;
             public static int conver = 60000;
+            public static int Npost = 3; //Numero di post
         }
         static async Task Main(string[] args)
         {
@@ -78,11 +111,11 @@ namespace r_memes_to_telegram
         {
             string html;
 
-            using (var client = new WebClient())
-            {
-                html = client.DownloadString("https://www.reddit.com/r/memes/new.json?sort=new&limit=1"); //Limit == qantità di post nel json
-            }
-            // html = System.IO.File.ReadAllText("test.json");
+            /* using (var client = new WebClient())
+             {
+                 html = client.DownloadString("https://www.reddit.com/r/memes/new.json?sort=new&limit=" + setting.Npost); //Limit == qantità di post nel json
+             }*/
+            html = System.IO.File.ReadAllText("test.json");
 
             parsJsonAsync(html);
         }
@@ -91,53 +124,69 @@ namespace r_memes_to_telegram
         {
             dynamic din_json = JsonConvert.DeserializeObject(json);
 
-            if (din_json.data.children[0].data.id != post.id)
+
+            for (int i = 0; i < setting.Npost; i++)
             {
-                post.title = din_json.data.children[0].data.title;
-                post.author = din_json.data.children[0].data.author;
-                post.img_url = din_json.data.children[0].data.url;
-                post.post_url = din_json.data.children[0].data.permalink;
-                post.id = din_json.data.children[0].data.id;
+
+                Console.WriteLine(
+                    "\n##############\n\nPost [" + i + "]: \n-----------"
+                    + "\nTitle: " + din_json.data.children[i].data.title
+                    + "\nAuthor: " + din_json.data.children[i].data.author
+                    + "\nUrl: " + din_json.data.children[i].data.url
+                    + "\nPermalink: " + din_json.data.children[i].data.permalink
+                    + "\nId: " + din_json.data.children[i].data.id
+                    + "\nIsVideo: " + din_json.data.children[i].data.is_video
+                    );
+            }
 
 
-                var botClient = new TelegramBotClient(token.key);
-                var me = botClient.GetMeAsync().Result;
+            Console.ReadLine();
 
-                //Console.WriteLine($"Bot: {me.Id} - Nome: {me.FirstName}");
+            //Posts[] dinjson = JsonConvert.DeserializeObject<Posts[]>(json);
+            Posts[] post = new Posts[setting.Npost];
+
+            for (int i = 0; i < setting.Npost; i++)
+            {
+                post[i].SetInfo(
+                    din_json.data.children[i].data.title,
+                    din_json.data.children[i].data.author,
+                    din_json.data.children[i].data.url,
+                    din_json.data.children[i].data.permalink,
+                    din_json.data.children[i].data.id,
+                    din_json.data.children[i].data.is_video
+                    );
+            }
 
 
 
-                //var t = await botClient.SendTextMessageAsync("@MemeToTelegram", "text message");
+            Console.WriteLine("#-------------------------------------------------#");
+
+            for (int i = 0; i < setting.Npost; i++)
+            {
+                post[i].printInfo();
+            }
 
 
 
+            Console.ReadLine();
+
+            var botClient = new TelegramBotClient(token.key);
+            var me = botClient.GetMeAsync().Result;
+
+
+
+
+            /*
                 Message message = await botClient.SendPhotoAsync(
                  chatId: "@MemeToTelegram",
                  photo: post.img_url,
                 caption: "<b>" + post.title + "</b> - <i>Posted by: " + post.author + "</i> ▪️ <a href=\"https://www.reddit.com" + post.post_url + "\">Reddit</a>",
                 parseMode: ParseMode.Html
                 );
-
-
-            }
-            else
-            {
-                Console.WriteLine("[ERROR] Same post, skipping..");
-            }
+                */
 
 
 
-
-            /*
-            Console.WriteLine(din_json);
-
-            Console.WriteLine("\n---------------------------------------\n");
-            Console.WriteLine("TITLE: " + post.title);
-            Console.WriteLine("AUTHOR: " + post.author);
-            Console.WriteLine("IMG URL: " + post.img_url);
-            Console.WriteLine("URL: " + post.post_url);
-            Console.WriteLine("\n---------------------------------------\n");
-            */
 
 
         }
